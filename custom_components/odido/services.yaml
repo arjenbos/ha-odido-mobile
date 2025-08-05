@@ -1,0 +1,12 @@
+buy_bundle:
+  name: Buy Bundle
+  description: Trigger a data bundle purchase for a specific Odido device.
+  fields:
+    device_id:
+      name: Device
+      description: The device to buy a bundle for.
+      required: true
+      selector:
+        device:
+          integration: odido
+          domain: odido

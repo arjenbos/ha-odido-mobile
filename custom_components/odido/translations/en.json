@@ -1,0 +1,17 @@
+{
+  "title": "Odido Mobile",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Odido Mobile",
+        "description": "Open [this url]({login_url}) and login. After you successfully logged in, copy the URL from your browser and paste it below.",
+        "data": {
+          "refreshTokenUrl": "Refresh Token URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Failed to authenticate. Please generate a new refresh token and try again."
+    }
+  }
+}

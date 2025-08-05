@@ -1,0 +1,9 @@
+{
+  "domain": "odido",
+  "version": "0.1.0",
+  "name": "Odido",
+  "codeowners": ["@arjenbos"],
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "config_flow": true
+}
