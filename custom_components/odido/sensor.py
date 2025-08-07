@@ -56,21 +56,6 @@ async def async_setup_entry(
             OdidoSubscriptionSensor(
                 coordinator,
                 OdidoEntityDescription(
-                    key="agreement.start_date",
-                    name="Start Date",
-                    device_class=SensorDeviceClass.DATE,
-                    value_fn=lambda sensor: sensor.subscription.agreement.start_date.strftime(
-                        "%Y-%m-%d"
-                    ),
-                ),
-                msisdn,
-            )
-        )
-
-        sensors.append(
-            OdidoSubscriptionSensor(
-                coordinator,
-                OdidoEntityDescription(
                     key="data_used",
                     name="Data used",
                     device_class=SensorDeviceClass.DATA_SIZE,

@@ -29,7 +29,7 @@ class OdidoCoordinator(DataUpdateCoordinator[Dict[str, Dict[str, Any]]]):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=90),
+            update_interval=timedelta(minutes=5),
         )
 
     async def _async_update_data(self) -> Dict[str, Dict[str, Any]]:
@@ -47,6 +47,8 @@ class OdidoCoordinator(DataUpdateCoordinator[Dict[str, Dict[str, Any]]]):
             roaming_bundles = await self.hass.async_add_executor_job(
                 self.api.subscription, subscription, "roamingbundles"
             )
+
+            _LOGGER.debug("Roaming bundles for %s: %s", subscription.msisdn, roaming_bundles)
 
             mb_left_in_bundles = 0
             mb_used_in_bundles = 0
