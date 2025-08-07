@@ -63,6 +63,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> True:
                 )
                 _LOGGER.debug(response)
 
+                return
+
         _LOGGER.error("No valid odido sensor found for device_id %s", device_id)
 
     hass.services.async_register("odido", "buy_bundle", handle_buy_bundle)
