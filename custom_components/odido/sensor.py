@@ -1,159 +1,161 @@
+"""Sensor platform for the Odido integration."""
+
 from __future__ import annotations
 
 import logging
-from math import floor
-from typing import Callable
+from typing import Any, Callable
+from dataclasses import dataclass
 
-from homeassistant.components.sensor import SensorEntityDescription, SensorDeviceClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity import Entity
-from .structs.Subscription import Subscription
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
 from .const import DOMAIN
-from dataclasses import dataclass
+from .coordinator import OdidoCoordinator
+from .structs.Subscription import Subscription
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    """Set up the sensor platform."""
-    _LOGGER.debug("Setting up sensor platform.")
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities
+) -> None:
+    """Set up Odido sensors based on a config entry."""
+    _LOGGER.debug("Setting up Odido sensors")
 
     odido_api = hass.data[DOMAIN][entry.entry_id]["odido_api"]
 
-    subscriptions = await hass.async_add_executor_job(odido_api.subscriptions)
+    coordinator = OdidoCoordinator(hass, odido_api)
+    await coordinator.async_config_entry_first_refresh()
 
-    _LOGGER.debug(subscriptions)
+    # Store the coordinator for possible future use by other platforms
+    hass.data[DOMAIN][entry.entry_id]["coordinator"] = coordinator
 
-    sensors = []
+    sensors: list[OdidoSubscriptionSensor] = []
 
-    for subscription in subscriptions:
-        roaming_bundles = await hass.async_add_executor_job(odido_api.subscription, subscription, 'roamingbundles')
-        mb_left_in_bundles = 0
-        mb_used_in_bundles = 0
-        _LOGGER.debug(roaming_bundles)
-        for bundle in roaming_bundles.get('Bundles', []):
-            if "NL" in bundle.get('Zones', []):
-                remaining = bundle.get("Remaining", {})
-                used = bundle.get("Used", {})
-
-                _LOGGER.debug("NL zone found in bundle, %s", bundle)
-                mb_left_in_bundles += floor(remaining.get("Value", 0) / 1024)
-                mb_used_in_bundles += floor(used.get("Value", 0) / 1024)
-
-        _LOGGER.debug("Data left in roaming bundles: %s MB", mb_left_in_bundles)
-        _LOGGER.debug("Data used in roaming bundles: %s MB", mb_used_in_bundles)
-
+    for msisdn in coordinator.data:
         sensors.append(
             OdidoSubscriptionSensor(
+                coordinator,
                 OdidoEntityDescription(
                     key="msisdn",
                     name="Phone Number",
-                    value_fn=lambda sensor: sensor._subscription.msisdn,
+                    value_fn=lambda sensor: sensor.subscription.msisdn,
                 ),
-                subscription=subscription,
+                msisdn,
             )
         )
 
         sensors.append(
             OdidoSubscriptionSensor(
+                coordinator,
                 OdidoEntityDescription(
                     key="agreement.start_date",
                     name="Start Date",
                     device_class=SensorDeviceClass.DATE,
-                    value_fn=lambda sensor: sensor._subscription.agreement.start_date.strftime("%Y-%m-%d"),
+                    value_fn=lambda sensor: sensor.subscription.agreement.start_date.strftime(
+                        "%Y-%m-%d"
+                    ),
                 ),
-                subscription=subscription,
+                msisdn,
             )
         )
 
         sensors.append(
             OdidoSubscriptionSensor(
+                coordinator,
                 OdidoEntityDescription(
                     key="data_used",
                     name="Data used",
                     device_class=SensorDeviceClass.DATA_SIZE,
                     value_fn=lambda sensor: sensor.mb_used_in_bundles,
                 ),
-                subscription=subscription,
-                mb_used_in_bundles=mb_used_in_bundles,
+                msisdn,
             )
         )
 
         sensors.append(
             OdidoSubscriptionSensor(
+                coordinator,
                 OdidoEntityDescription(
                     key="data_left",
                     name="Data Left",
                     device_class=SensorDeviceClass.DATA_SIZE,
                     value_fn=lambda sensor: sensor.mb_left_in_bundles,
                 ),
-                subscription=subscription,
-                mb_left_in_bundles=mb_left_in_bundles,
+                msisdn,
             )
         )
 
     async_add_entities(sensors)
 
 
-def get_nested_attr(obj, attr_path, default=None):
-    try:
-        for attr in attr_path.split('.'):
-            obj = getattr(obj, attr)
-        return obj
-    except AttributeError:
-        return default
-
-class OdidoSubscriptionSensor(Entity):
+class OdidoSubscriptionSensor(CoordinatorEntity[OdidoCoordinator], SensorEntity):
     """Representation of an Odido subscription sensor."""
 
     entity_description: OdidoEntityDescription
 
     def __init__(
         self,
+        coordinator: OdidoCoordinator,
         entity_description: OdidoEntityDescription,
-        subscription: Subscription,
-        mb_left_in_bundles: float = 0,
-        mb_used_in_bundles: float = 0,
-    ):
-        """Initialize the sensor."""
+        msisdn: str,
+    ) -> None:
+        """Initialize the Odido subscription sensor."""
+        super().__init__(coordinator)
         self.entity_description = entity_description
-        self._subscription = subscription
-        self.mb_left_in_bundles = mb_left_in_bundles
-        self.mb_used_in_bundles = mb_used_in_bundles
+        self._msisdn = msisdn
+        self._attr_name = entity_description.name
 
     @property
-    def state(self):
+    def _data(self) -> dict[str, Any]:
+        return self.coordinator.data[self._msisdn]
+
+    @property
+    def subscription(self) -> Subscription:
+        return self._data["subscription"]
+
+    @property
+    def mb_left_in_bundles(self) -> float:
+        return self._data["mb_left_in_bundles"]
+
+    @property
+    def mb_used_in_bundles(self) -> float:
+        return self._data["mb_used_in_bundles"]
+
+    @property
+    def native_value(self):
         """Return the state of the sensor."""
         return self.entity_description.value_fn(self)
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return the device info."""
+        subscription = self.subscription
         return DeviceInfo(
-            identifiers={
-                (DOMAIN, self._subscription.msisdn)
-            },
-            name=self._subscription.alias or self._subscription.msisdn,
+            identifiers={(DOMAIN, subscription.msisdn)},
+            name=subscription.alias or subscription.msisdn,
             manufacturer="Odido",
-
         )
 
     @property
     def unique_id(self) -> str:
-        """Return a unique ID for the sensor."""
-        return f"{self._subscription.msisdn}_{self.entity_description.key}"
+        return f"{self._msisdn}_{self.entity_description.key}"
 
     @property
     def extra_state_attributes(self):
-        """Return the attribution for the sensor."""
+        subscription = self.subscription
+        return {"subscription_url": subscription.subscription_url}
 
-        return {
-            "subscription_url": self._subscription.subscription_url,
-        }
 
 @dataclass(frozen=True, kw_only=True)
 class OdidoEntityDescription(SensorEntityDescription):
     """Describes Odido sensor entity."""
 
-    value_fn: Callable[[OdidoSubscriptionSensor], float | str | None] = lambda _: None
+    value_fn: Callable[["OdidoSubscriptionSensor"], float | str | None]
+
