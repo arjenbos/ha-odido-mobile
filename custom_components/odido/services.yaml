@@ -10,3 +10,11 @@ buy_bundle:
         device:
           integration: odido
           domain: odido
+    buying_code:
+      name: Buying Code
+      description: Buying code for the bundle. Defaults to A0DAY01.
+      required: false
+      default: A0DAY01
+      selector:
+        text:
+
