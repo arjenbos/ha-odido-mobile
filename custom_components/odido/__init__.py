@@ -4,7 +4,7 @@ import urllib3
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import (ConfigEntryNotReady, ConfigEntryAuthFailed)
+from homeassistant.exceptions import (ConfigEntryNotReady, ConfigEntryAuthFailed, HomeAssistantError)
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry, async_entries_for_device
 
@@ -63,7 +63,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> True:
                 )
                 _LOGGER.debug(response)
 
-                return
+                if "ErrorCode" in response:
+                    raise BuyingRoamingBundleError(response.get("ErrorCode"))
+
+                return True
 
         _LOGGER.error("No valid odido sensor found for device_id %s", device_id)
 
@@ -82,3 +85,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+class BuyingRoamingBundleError(HomeAssistantError):
+    """Error raised when an error occurred while buying a roaming bundle."""
