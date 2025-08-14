@@ -10,7 +10,7 @@ ACTION_TYPE_BUY_BUNDLE = "buy_bundle"
 
 async def async_get_actions(hass, device_id):
     """List actions for a device."""
-    registry = await hass.helpers.entity_registry.async_get_registry()
+    registry = async_get(hass)
     entries = async_entries_for_device(registry, device_id)
 
     actions = []
