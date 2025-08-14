@@ -3,7 +3,7 @@ from homeassistant.const import Platform
 DOMAIN = "odido"
 
 PLATFORMS = [
-    Platform.SENSOR,
+    Platform.SENSOR
 ]
 
 ENCRYPTION_KEY = b"afIqRZm6iSev4zWysNGAjR6fCrOMf5GQqhKFfmXkgOU="
