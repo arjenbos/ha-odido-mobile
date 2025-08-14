@@ -96,6 +96,7 @@ class OdidoSubscriptionSensor(CoordinatorEntity[OdidoCoordinator], SensorEntity)
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._msisdn = msisdn
+        self._attr_has_entity_name = True
         self._attr_name = entity_description.name
 
     @property
