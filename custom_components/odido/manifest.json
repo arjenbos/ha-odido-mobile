@@ -1,10 +1,10 @@
 {
   "domain": "odido",
-  "version": "0.1.0",
   "name": "Odido",
   "codeowners": ["@arjenbos"],
+  "config_flow": true,
+  "documentation": "https://github.com/arjenbos/ha-odido-mobile",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "config_flow": true,
-  "documentation": "https://github.com/arjenbos/ha-odido-mobile"
+  "version": "0.1.0"
 }
