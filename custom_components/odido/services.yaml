@@ -9,7 +9,6 @@ buy_bundle:
       selector:
         device:
           integration: odido
-          domain: odido
     buying_code:
       name: Buying Code
       description: Buying code for the bundle. Defaults to A0DAY01.
