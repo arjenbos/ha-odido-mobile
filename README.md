@@ -1,9 +1,23 @@
-# ⚠️ Beta Notice
+# Custom Odido Mobile Home Assistant integration
+Home Assistant integration for Odido Mobile (formerly T-Mobile NL). It lets you view your mobile usage and (optionally) buy a data bundle via a Home Assistant service call.
 
-This project is currently in **beta** and should be considered **unstable**. It is not production-ready and **should not be used in critical environments**.
+## Disclaimer
+**Using this integration may result in extra costs with Odido.** Proceed only if you fully understand and accept this risk.
 
-## ❗️Disclaimer
-
-If you choose to use this software — for example, to buy **Odido bundles** — you do so **at your own risk**. The maintainers are **not responsible** for any charges, purchases, or issues that may arise from using this project.
-
-Use responsibly.
+## Automation example
+```yaml
+alias: Reload below 300
+description: ""
+triggers:
+  - trigger: numeric_state
+    entity_id:
+      - sensor.YOURSENSOR_data_left
+    below: 300
+conditions: []
+actions:
+  - action: odido.buy_bundle
+    data:
+      device_id: YOURDEVICEID
+      buying_code: A0DAY05
+mode: single
+```
